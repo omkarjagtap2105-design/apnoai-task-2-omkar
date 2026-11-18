@@ -1,0 +1,645 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>React Glassmorphism Profile Card</title>
+
+  <!--
+    CDN Script Loading Order & Purpose:
+    1. React 18 (production UMD) — provides the core React library (hooks, components, etc.)
+    2. ReactDOM 18 (production UMD) — provides the DOM renderer; depends on React, so it must load AFTER React
+    3. Tailwind CSS CDN — injects utility CSS at runtime; must load before the Tailwind config script so the config can extend the theme
+    4. Tailwind inline config — extends the default theme with custom glass colors, backdrop blur values, and heart-pop animation; must come AFTER the Tailwind CDN script
+    5. Babel Standalone — transforms JSX in <script type="text/babel"> blocks into browser-executable JavaScript at runtime.
+       Browsers cannot parse JSX natively, so Babel is required to compile the React component code on the fly.
+       Babel must load before the component <script type="text/babel"> block so it can process the JSX.
+  -->
+
+  <!-- 1. React 18 production UMD build -->
+  <script crossorigin src="https://unpkg.com/react@18/umd/react.production.min.js"></script>
+
+  <!-- 2. ReactDOM 18 production UMD build -->
+  <script crossorigin src="https://unpkg.com/react-dom@18/umd/react-dom.production.min.js"></script>
+
+  <!-- 3. Tailwind CSS CDN (injects styles at runtime) -->
+  <script src="https://cdn.tailwindcss.com"></script>
+
+  <!-- 4. Tailwind inline config — extends theme with glassmorphism values and heart animation -->
+  <script>
+    tailwind.config = {
+      theme: {
+        extend: {
+          colors: {
+            glass: {
+              dark: 'rgba(255, 255, 255, 0.1)',
+              light: 'rgba(255, 255, 255, 0.7)'
+            }
+          },
+          backdropBlur: {
+            xs: '2px',
+            sm: '4px',
+            md: '8px',
+            lg: '12px',
+            xl: '16px'
+          },
+          animation: {
+            'heart-pop': 'heart-pop 0.6s ease-out'
+          },
+          keyframes: {
+            'heart-pop': {
+              '0%': { transform: 'scale(1)' },
+              '50%': { transform: 'scale(1.4)' },
+              '100%': { transform: 'scale(1)' }
+            }
+          }
+        }
+      }
+    }
+  </script>
+
+  <!-- 5. Babel Standalone — needed to transform JSX into browser-compatible JavaScript at runtime -->
+  <script src="https://unpkg.com/@babel/standalone/babel.min.js"></script>
+</head>
+<body>
+  <!-- React mounting point — ReactDOM.createRoot() renders the App component here -->
+  <div id="root"></div>
+
+  <!--
+    6. Component code — Babel transforms this JSX block after loading.
+       type="text/babel" tells the browser not to execute it as regular JS;
+       Babel picks it up, compiles the JSX, and injects the output.
+       Subsequent tasks will add the App component, ProfileCard component, and render call here.
+  -->
+  <script type="text/babel">
+    /*
+     * ============================================================
+     * Profile Data Object
+     * ============================================================
+     * This object holds all student profile information.
+     * It is passed into the ProfileCard component as individual
+     * props using the spread operator ({...profileData}).
+     * Each field maps directly to a prop accepted by ProfileCard.
+     * Requirement 14: All data must match the provided student info
+     * exactly — no invented details.
+     */
+    const profileData = {
+      name: "Omkar Jagtap",
+      role: "Blockchain Technology Student & Web Developer",
+      location: "Pune, Maharashtra, India",
+      bio: "I am a Blockchain Technology student passionate about Web Development, Blockchain, and emerging technologies. I enjoy building practical digital solutions, learning modern development tools, and exploring innovative ideas.",
+      skills: ["React", "JavaScript", "HTML", "CSS", "Blockchain Technology"],
+      socialLinks: [
+        { label: "GitHub", url: "https://github.com/omkarjagtap2105-design", icon: "github" },
+        { label: "LinkedIn", url: "https://www.linkedin.com/in/omkar-jagtap-343923321/", icon: "linkedin" },
+        { label: "Email", url: "mailto:omkarjagtap2105@gmail.com", icon: "email" }
+      ],
+      // ============================================================
+      // PROFILE PHOTO — Omkar Jagtap
+      // ============================================================
+      // Your real profile photo is hosted on GitHub's avatar CDN.
+      // This URL uses your GitHub account avatar which is publicly
+      // accessible without authentication.
+      // To use a different photo: replace the URL below with any
+      // direct image link (e.g. from Google Drive, Imgur, Cloudinary).
+      // ============================================================
+      avatar: "https://avatars.githubusercontent.com/u/226013934?v=4"
+    };
+
+    /*
+     * ============================================================
+     * React Hooks — useState
+     * ============================================================
+     * useState is a React Hook that lets a functional component
+     * hold and update local state. It returns an array with two
+     * elements:
+     *   1. The current state value.
+     *   2. A setter function that updates that value and triggers
+     *      a re-render of the component.
+     *
+     * Unlike class components (which use this.state and
+     * this.setState), hooks let functional components manage state
+     * cleanly without classes. Each useState call creates an
+     * independent piece of state.
+     *
+     * We destructure useState from the global React object (made
+     * available by the React 18 UMD CDN script loaded in <head>).
+     */
+    const { useState } = React;
+
+    /*
+     * ============================================================
+     * ProfileCard Component
+     * ============================================================
+     * A React functional component is a JavaScript function that
+     * returns JSX describing what the UI should look like. This
+     * component receives profile data via props and renders a
+     * glassmorphism-styled profile card.
+     *
+     * Props (short for "properties") are how React passes data
+     * from a parent component to a child. They are read-only
+     * inside the receiving component. Here we destructure the
+     * props object into named variables so each field can be
+     * used directly by name throughout the component:
+     *   - name:        the person's full name (rendered as heading)
+     *   - role:        the person's role/title (rendered as subheading)
+     *   - bio:         a short biography paragraph
+     *   - skills:      an array of skill strings (rendered as badges)
+     *   - avatar:      a URL to the profile image
+     *   - location:    the person's location (rendered as a label)
+     *   - socialLinks: an array of social link objects
+     *                 ({ label, url, icon })
+     *
+     * Destructuring in the function parameter is equivalent to
+     * writing `function ProfileCard(props) { const { name, ... } = props; }`
+     * but is more concise and makes the component's expected props
+     * explicit at a glance.
+     */
+    function ProfileCard({ name, role, bio, skills, avatar, location, socialLinks }) {
+
+      /*
+       * useState hook — isDark (dark mode toggle state)
+       * --------------------------------------------------------
+       * Manages a boolean value that tracks the current theme.
+       * Initialized to false (light mode by default).
+       * When the user clicks the dark mode toggle button,
+       * setIsDark is called with the negation of the current
+       * value (!isDark), switching the card between dark and
+       * light glassmorphism styles. Because this is state (not
+       * a plain variable), updating it triggers a re-render so
+       * the UI reflects the new theme immediately.
+       */
+      const [isDark, setIsDark] = useState(false);
+
+      /*
+       * useState hook — likes (like button count state)
+       * --------------------------------------------------------
+       * Manages an integer value that tracks how many times the
+       * like button has been clicked. Initialized to 0. Each
+       * click calls setLikes(likes + 1) to increment the count,
+       * and the updated number is displayed next to the heart
+       * icon. Using state ensures the displayed count stays in
+       * sync with the actual number of clicks across re-renders.
+       */
+      const [likes, setLikes] = useState(0);
+
+      /*
+       * useState hook — isLiked (heart animation trigger state)
+       * --------------------------------------------------------
+       * Manages a boolean value used as a trigger for the heart
+       * pop animation. Initialized to false. When the like
+       * button is clicked, setIsLiked(true) applies the
+       * "animate-heart-pop" CSS class to the heart icon, causing
+       * it to scale up and back down. A setTimeout resets
+       * isLiked to false after 600ms (matching the animation
+       * duration) so the animation can be re-triggered on the
+       * next click. This pattern lets us toggle a CSS animation
+       * class via state rather than manipulating the DOM directly.
+       */
+      const [isLiked, setIsLiked] = useState(false);
+
+      /*
+       * Dark Mode Toggle — Event Handler
+       * ============================================================
+       * toggleDarkMode is called when the user clicks the dark mode
+       * toggle button. It uses the setIsDark updater function from
+       * useState to negate the current isDark value.
+       *
+       * How the dark mode toggle works using state:
+       *   - isDark holds the current theme (false = light, true = dark).
+       *   - setIsDark(!isDark) flips the boolean, so light becomes dark
+       *     and dark becomes light.
+       *   - Because isDark is React state (not a plain variable), calling
+       *     setIsDark triggers a re-render of the component. During that
+       *     re-render, all the conditional className expressions that read
+       *     isDark re-evaluate, swapping the gradient background, card
+       *     opacity, and text colors to the opposite theme.
+       *   - This all happens without reloading the page — the DOM is
+       *     updated in place by React's reconciliation.
+       */
+      const toggleDarkMode = () => {
+        // setIsDark negates the current value, switching between true and false
+        setIsDark(!isDark);
+      };
+
+      /*
+       * Like Button — Event Handler
+       * ============================================================
+       * handleLike is called when the user clicks the like button.
+       * It performs three operations:
+       *
+       *   1. setLikes(likes + 1) — increments the like count state by 1.
+       *      The updated number is displayed next to the heart icon and
+       *      stays in sync across re-renders.
+       *
+       *   2. setIsLiked(true) — sets the animation trigger flag to true.
+       *      The heart icon's className conditionally includes
+       *      "animate-heart-pop" when isLiked is true, which applies the
+       *      CSS keyframe animation (scale up to 1.4x and back to 1x over
+       *      0.6s). This is how the heart "pops" on click.
+       *
+       *   3. setTimeout(() => setIsLiked(false), 600) — after 600ms
+       *      (matching the animation duration defined in the Tailwind
+       *      keyframes config), resets isLiked back to false. This removes
+       *      the animation class so the heart returns to its resting state,
+       *      allowing the animation to be re-triggered on the next click.
+       *
+       * How the like button state and animation work:
+       *   - likes tracks the total count (an integer, displayed as a label).
+       *   - isLiked is a boolean flag that toggles a CSS animation class.
+       *   - The setTimeout cleanup ensures the animation class doesn't
+       *     stay applied permanently, which would prevent re-animation.
+       */
+      const handleLike = () => {
+        // setLikes increments the count by 1
+        setLikes(likes + 1);
+        // setIsLiked triggers the heart animation, then resets after animation
+        setIsLiked(true);
+        // Reset after 600ms so the animation can be re-triggered on next click
+        setTimeout(() => setIsLiked(false), 600);
+      };
+
+      /*
+       * ============================================================
+       * JSX Render — Glassmorphism Profile Card UI
+       * ============================================================
+       * This return statement describes the DOM structure of the
+       * card. Every className uses Tailwind utility classes.
+       * Classes that depend on the theme are applied conditionally
+       * using the ternary operator based on the `isDark` state.
+       *
+       * Semantic HTML is used for accessibility:
+       *   - <h1> for the person's name (primary heading)
+       *   - <h2> for the role (subheading)
+       *   - <p> for the bio paragraph
+       *   - <img> for the avatar with alt text containing the name
+       */
+      return (
+        <div className={isDark
+          ? "min-h-screen flex items-center justify-center p-4 sm:p-6 md:p-8 bg-gradient-to-br from-purple-900 via-violet-900 to-blue-900"
+          : "min-h-screen flex items-center justify-center p-4 sm:p-6 md:p-8 bg-gradient-to-br from-purple-100 via-violet-100 to-blue-100"
+        }>
+          {/* Responsive outer wrapper — padding scales with breakpoint:
+              p-4 on mobile, sm:p-6 at ≥640px, md:p-8 at ≥768px (Req 8.4).
+              min-h-screen + flex items-center justify-center centers the card
+              vertically and horizontally on the page. */}
+
+          {/* Card container — semi-transparent glass background (backdrop-blur-md)
+              with a subtle border, rounded corners, and a smooth hover scale
+              animation. Responsive max-width: w-full max-w-md on mobile (prevents
+              horizontal overflow at ≥320px), sm:max-w-sm at ≥640px, md:max-w-md at
+              ≥768px, lg:max-w-lg at ≥1024px. Padding scales from p-5 (mobile) to
+              p-8 (md+) for proportional spacing (Req 8.1–8.4).
+              WCAG AA contrast verified: dark theme — text-white/text-gray-200 on
+              bg-white/10 over dark gradient passes; light theme — text-gray-800/
+              text-gray-700 on bg-white/70 over light gradient passes (Req 9.3). */}
+          <div className={isDark
+            ? "bg-white/10 backdrop-blur-md border border-white/20 rounded-3xl hover:shadow-2xl hover:scale-[1.02] transition-all duration-300 w-full max-w-md sm:max-w-sm md:max-w-md lg:max-w-lg mx-auto p-5 sm:p-6 md:p-8"
+            : "bg-white/70 backdrop-blur-md border border-white/20 rounded-3xl hover:shadow-2xl hover:scale-[1.02] transition-all duration-300 w-full max-w-md sm:max-w-sm md:max-w-md lg:max-w-lg mx-auto p-5 sm:p-6 md:p-8"
+          }>
+
+            {/* Avatar section — circular image with a professional border.
+                The alt attribute contains the person's name for accessibility (Req 9.1).
+                The comment below instructs how to replace the placeholder (Req 10.2). */}
+            {/* Avatar placeholder — replace the src below with a real photo URL */}
+            <div className="flex justify-center mb-6">
+              <img
+                src={avatar}
+                alt={name}
+                className="rounded-full w-32 h-32 object-cover border-4 border-white/30"
+              />
+            </div>
+
+            {/* Name — primary heading (h1) with conditional text color (Req 2.2, 9.4) */}
+            <h1 className={isDark
+              ? "text-center text-white text-2xl font-bold"
+              : "text-center text-gray-800 text-2xl font-bold"
+            }>
+              {name}
+            </h1>
+
+            {/* Role — subheading (h2) with conditional text color (Req 2.3, 9.4) */}
+            <h2 className={isDark
+              ? "text-center text-purple-200 text-sm mt-1"
+              : "text-center text-purple-600 text-sm mt-1"
+            }>
+              {role}
+            </h2>
+
+            {/* Location label — inline SVG pin icon + text with conditional color (Req 2.5) */}
+            <div className="flex items-center justify-center mt-2">
+              <svg
+                className={isDark ? "w-4 h-4 text-gray-300 mr-1" : "w-4 h-4 text-gray-500 mr-1"}
+                fill="currentColor"
+                viewBox="0 0 20 20"
+                aria-hidden="true"
+              >
+                <path
+                  fillRule="evenodd"
+                  d="M10 2a6 6 0 0 0-6 6c0 4.5 6 10 6 10s6-5.5 6-10a6 6 0 0 0-6-6zm0 8a2 2 0 1 1 0-4 2 2 0 0 1 0 4z"
+                />
+              </svg>
+              <span className={isDark ? "text-gray-300 text-xs" : "text-gray-500 text-xs"}>
+                {location}
+              </span>
+            </div>
+
+            {/* Bio — paragraph with conditional text color and leading-relaxed for readability (Req 2.4).
+                Responsive text size: text-sm on mobile, sm:text-base at ≥640px for
+                proportional scaling (Req 8.4). */}
+            <p className={isDark
+              ? "text-center text-gray-200 text-sm sm:text-base leading-relaxed mt-4"
+              : "text-center text-gray-700 text-sm sm:text-base leading-relaxed mt-4"
+            }>
+              {bio}
+            </p>
+
+            {/* ============================================================
+                Skills section — Dynamic list rendering with map()
+                ============================================================
+                The map() method iterates over the skills array and
+                returns a new array of JSX <span> badge elements, one
+                per skill. React renders each element in the returned
+                array into the DOM. This is the idiomatic way to render
+                lists dynamically in React — instead of hardcoding each
+                badge, the component adapts to any skill set passed via
+                props.
+
+                The `|| []` fallback is a guard: if the skills prop is
+                missing, undefined, or null, JavaScript's short-circuit
+                evaluation substitutes an empty array, so map() runs
+                safely and renders zero badges instead of throwing a
+                "Cannot read property 'map' of undefined" error (Req 3.3).
+
+                Each badge receives a key={skill || index} prop. React
+                uses keys to match elements between renders for list
+                reconciliation. Using the skill string as the key (with
+                the array index as a fallback for empty/duplicate
+                strings) ensures stable identity across re-renders (Req 3.2).
+
+                The flex-wrap container lets badges flow onto the next
+                line on smaller screens so they don't overflow the card.
+                */}
+            <div className="mt-6">
+              {/* Small "Skills" label/title above the badges */}
+              <p className={isDark
+                ? "text-purple-200 text-xs font-semibold uppercase tracking-wide mb-3 text-center"
+                : "text-purple-600 text-xs font-semibold uppercase tracking-wide mb-3 text-center"
+              }>
+                Skills
+              </p>
+
+              {/* Skills badges container — flex-wrap lets badges wrap on small screens */}
+              <div className="flex flex-wrap justify-center gap-2">
+                {(skills || []).map((skill, index) => (
+                  <span
+                    key={skill || index}
+                    className={isDark
+                      ? "bg-white/10 text-purple-100 border border-white/10 rounded-full px-3 py-1 hover:scale-105 transition-all duration-200"
+                      : "bg-purple-100 text-purple-700 border border-purple-200 rounded-full px-3 py-1 hover:scale-105 transition-all duration-200"
+                    }
+                  >
+                    {skill}
+                  </span>
+                ))}
+              </div>
+            </div>
+
+            {/* ============================================================
+                Social links section — Dynamic list rendering with map()
+                ============================================================
+                Like the skills section above, the map() method iterates
+                over the socialLinks array and returns a new array of JSX
+                <a> (anchor) elements, one per social link. Each anchor is
+                a clickable link to the corresponding social profile or
+                contact. This is the idiomatic way to render lists
+                dynamically in React — the component adapts to any set of
+                links passed via props without hardcoding each one.
+
+                The `|| []` fallback is a guard: if the socialLinks prop
+                is missing, undefined, or null, JavaScript's short-circuit
+                evaluation substitutes an empty array, so map() runs
+                safely and renders zero links instead of throwing a
+                "Cannot read property 'map' of undefined" error (Req 4.5).
+
+                Each anchor receives:
+                  - key={link.label || index}: a unique key for React list
+                    reconciliation, using the label string with the array
+                    index as a fallback (Req 4.2).
+                  - href={link.url}: the actual link destination (Req 4.3).
+                  - aria-label={link.label}: an accessible label for screen
+                    readers so assistive technology can announce the link
+                    purpose (Req 4.4, 9.2).
+                  - target="_blank" and rel="noopener noreferrer": opens
+                    external links in a new tab safely (noopener prevents
+                    the new page from accessing window.opener). These are
+                    omitted for email links which use the mailto: protocol.
+                  - An inline SVG icon chosen by the link.icon field
+                    (github, linkedin, or email).
+                  - Conditional text color based on the theme (dark:
+                    text-white/70 hover:text-white, light: text-gray-600
+                    hover:text-purple-600) and a hover scale + rotate
+                    effect for a polished interaction.
+                */}
+            <div className="mt-6">
+              {/* Social links — gap-4 on mobile; badges are fixed-size SVG icons (24px)
+                  so three links fit within 320px card width without overflow. */}
+              <div className="flex justify-center gap-4">
+                {(socialLinks || []).map((link, index) => (
+                  <a
+                    key={link.label || index}
+                    href={link.url}
+                    aria-label={link.label}
+                    {...(link.icon !== "email"
+                      ? { target: "_blank", rel: "noopener noreferrer" }
+                      : {}
+                    )}
+                    className={isDark
+                      ? "text-white/70 hover:text-white hover:scale-110 hover:rotate-3 transition-all duration-200"
+                      : "text-gray-600 hover:text-purple-600 hover:scale-110 hover:rotate-3 transition-all duration-200"
+                    }
+                  >
+                    {/* Inline SVG icon — rendered based on the link.icon field.
+                        aria-hidden="true" hides the decorative icon from screen
+                        readers since the anchor already has an aria-label. */}
+                    {link.icon === "github" && (
+                      <svg className="w-6 h-6" fill="currentColor" viewBox="0 0 24 24" aria-hidden="true">
+                        <path d="M12 0C5.37 0 0 5.37 0 12c0 5.31 3.435 9.795 8.205 11.385.6.105.825-.255.825-.57 0-.285-.015-1.23-.015-2.235-3.015.555-3.795-.735-4.05-1.41-.135-.345-.72-1.41-1.23-1.695-.42-.225-1.02-.78-.015-.795.945-.015 1.62.87 1.845 1.23 1.08 1.815 2.805 1.305 3.495.99.105-.78.42-1.305.765-1.605-2.67-.3-5.46-1.335-5.46-5.925 0-1.305.465-2.385 1.23-3.225-.12-.3-.54-1.53.12-3.18 0 0 1.005-.315 3.3 1.23.96-.27 1.98-.405 3-.405s2.04.135 3 .405c2.295-1.56 3.3-1.23 3.3-1.23.66 1.65.24 2.88.12 3.18.765.84 1.23 1.905 1.23 3.225 0 4.605-2.805 5.625-5.475 5.925.435.375.81 1.095.81 2.22 0 1.605-.015 2.895-.015 3.3 0 .315.225.69.825.57A12.02 12.02 0 0024 12c0-6.63-5.37-12-12-12z" />
+                      </svg>
+                    )}
+                    {link.icon === "linkedin" && (
+                      <svg className="w-6 h-6" fill="currentColor" viewBox="0 0 24 24" aria-hidden="true">
+                        <path d="M20.447 20.452h-3.554v-5.569c0-1.328-.027-3.037-1.852-3.037-1.853 0-2.136 1.445-2.136 2.939v5.667H9.351V9h3.414v1.561h.046c.477-.9 1.637-1.85 3.37-1.85 3.601 0 4.267 2.37 4.267 5.455v6.286zM5.337 7.433a2.062 2.062 0 01-2.063-2.065 2.063 2.063 0 112.063 2.065zm1.782 13.019H3.555V9h3.564v11.452zM22.225 0H1.771C.792 0 0 .774 0 1.729v20.542C0 23.227.792 24 1.771 24h20.451C23.2 24 24 23.227 24 22.271V1.729C24 .774 23.2 0 22.225 0z" />
+                      </svg>
+                    )}
+                    {link.icon === "email" && (
+                      <svg className="w-6 h-6" fill="currentColor" viewBox="0 0 24 24" aria-hidden="true">
+                        <path d="M20 4H4c-1.1 0-1.99.9-1.99 2L2 18c0 1.1.9 2 2 2h16c1.1 0 2-.9 2-2V6c0-1.1-.9-2-2-2zm0 4l-8 5-8-5V6l8 5 8-5v2z" />
+                      </svg>
+                    )}
+                  </a>
+                ))}
+              </div>
+            </div>
+
+            {/* ============================================================
+                Dark Mode Toggle & Like Button — Interactive Controls
+                ============================================================
+                The two controls below sit side by side in a centered flex
+                row (flex justify-center gap-4). Both rely on the useState
+                hooks declared earlier in the component.
+
+                Dark Mode Toggle (Req 5.2, 5.5, 5.6, 11.5):
+                  - onClick={toggleDarkMode} calls the handler that flips
+                    isDark via setIsDark(!isDark). Because isDark is React
+                    state, the update triggers a re-render and every
+                    conditional className in the component re-evaluates,
+                    swapping the gradient background, card opacity, and
+                    text colors to the opposite theme — all without a
+                    page reload (Req 5.2, 5.6).
+                  - aria-label="Toggle dark mode" makes the button's
+                    purpose clear to screen readers (Req 5.5).
+                  - A sun icon is shown when isDark is true (indicating
+                    "click to switch to light"), and a moon icon when
+                    isDark is false ("click to switch to dark").
+                  - The button background and text colors change with the
+                    theme (dark: bg-white/10 text-yellow-300, light:
+                    bg-purple-100 text-purple-600) with a hover highlight
+                    and smooth color transition.
+
+                Like Button with Heart Animation (Req 6.2–6.5, 11.6):
+                  - onClick={handleLike} calls the handler that increments
+                    the likes count via setLikes(likes + 1) and sets
+                    isLiked=true to trigger the heart-pop CSS keyframe
+                    animation (Req 6.2, 6.3).
+                  - aria-label="Like profile card" announces the button's
+                    purpose to assistive technology (Req 6.5).
+                  - The heart SVG's className conditionally includes
+                    "animate-heart-pop" when isLiked is true, applying the
+                    scale animation defined in the Tailwind keyframes config.
+                    After 600ms the handleLike timeout resets isLiked to
+                    false so the animation can be re-triggered.
+                  - A <span>{likes}</span> next to the heart displays the
+                    current count, keeping the label in sync with state
+                    across re-renders (Req 6.4).
+                  - The button background and text colors adapt to the
+                    theme (dark: bg-pink-500/20 text-pink-300, light:
+                    bg-pink-100 text-pink-700) with a hover highlight and
+                    smooth color transition.
+                */}
+            {/* Button container — flex-wrap allows buttons to wrap to the next line
+                on very small screens to prevent overflow. gap-3 on mobile, sm:gap-4
+                at ≥640px for slightly more breathing room on larger screens. */}
+            <div className="mt-6 flex justify-center flex-wrap gap-3 sm:gap-4">
+
+              {/* Dark mode toggle button — flips isDark state on click (Req 5.2, 5.5) */}
+              <button
+                onClick={toggleDarkMode}
+                aria-label="Toggle dark mode"
+                className={isDark
+                  ? "bg-white/10 text-yellow-300 hover:bg-white/20 transition-colors duration-200 rounded-full px-4 py-2 flex items-center gap-2"
+                  : "bg-purple-100 text-purple-600 hover:bg-purple-200 transition-colors duration-200 rounded-full px-4 py-2 flex items-center gap-2"
+                }
+              >
+                {/* Sun icon shown in dark mode (click to switch to light) */}
+                {isDark && (
+                  <svg className="w-5 h-5" fill="currentColor" viewBox="0 0 20 20" aria-hidden="true">
+                    <path
+                      fillRule="evenodd"
+                      d="M10 2a1 1 0 011 1v1a1 1 0 11-2 0V3a1 1 0 011-1zm4 8a4 4 0 11-8 0 4 4 0 018 0zm-.464-4.95l.707-.707a1 1 0 00-1.414-1.414l-.707.707a1 1 0 001.414 1.414zM17 9a1 1 0 100 2h1a1 1 0 100-2h-1zm-2.464 5.95l.707.707a1 1 0 01-1.414 1.414l-.707-.707a1 1 0 011.414-1.414zM10 15a1 1 0 011 1v1a1 1 0 11-2 0v-1a1 1 0 011-1zm-6.536-2.464l-.707.707a1 1 0 001.414 1.414l.707-.707a1 1 0 00-1.414-1.414zM3 9a1 1 0 100 2h1a1 1 0 100-2H3zm2.464-4.95l-.707-.707a1 1 0 011.414-1.414l.707.707a1 1 0 01-1.414 1.414zM14 10a4 4 0 11-8 0 4 4 0 018 0z"
+                    />
+                  </svg>
+                )}
+                {/* Moon icon shown in light mode (click to switch to dark) */}
+                {!isDark && (
+                  <svg className="w-5 h-5" fill="currentColor" viewBox="0 0 20 20" aria-hidden="true">
+                    <path d="M17.293 13.293A8 8 0 016.707 2.707a8.001 8.001 0 1010.586 10.586z" />
+                  </svg>
+                )}
+                {/* Button text changes with the theme */}
+                <span>{isDark ? "Light Mode" : "Dark Mode"}</span>
+              </button>
+
+              {/* Like button — increments likes count and triggers heart animation (Req 6.2–6.5) */}
+              <button
+                onClick={handleLike}
+                aria-label="Like profile card"
+                className={isDark
+                  ? "bg-pink-500/20 text-pink-300 hover:bg-pink-500/30 transition-colors duration-200 rounded-full px-4 py-2 flex items-center gap-2"
+                  : "bg-pink-100 text-pink-700 hover:bg-pink-200 transition-colors duration-200 rounded-full px-4 py-2 flex items-center gap-2"
+                }
+              >
+                {/* Heart SVG — className conditionally includes "animate-heart-pop" when
+                    isLiked is true, triggering the CSS keyframe scale animation (Req 6.3).
+                    The pink/red fill and w-6 h-6 size make the icon clearly visible. */}
+                <svg
+                  className={`w-6 h-6 ${isLiked ? "animate-heart-pop" : ""}`}
+                  fill="currentColor"
+                  viewBox="0 0 24 24"
+                  aria-hidden="true"
+                >
+                  <path d="M12 21.35l-1.45-1.32C5.4 15.36 2 12.28 2 8.5 2 5.42 4.42 3 7.5 3c1.74 0 3.41.81 4.5 2.09C13.09 3.81 14.76 3 16.5 3 19.58 3 22 5.42 22 8.5c0 3.78-3.4 6.86-8.55 11.54L12 21.35z" />
+                </svg>
+                {/* Like count — displayed as a number label next to the heart (Req 6.4).
+                    Because {likes} reads from state, the count updates on every click. */}
+                <span>{likes}</span>
+              </button>
+
+            </div>
+
+          </div>
+        </div>
+      );
+    }
+
+    /*
+     * ============================================================
+     * App — Root Functional Component
+     * ============================================================
+     * A React functional component is a JavaScript function that
+     * returns JSX (a syntax extension that describes what the UI
+     * should look like). Unlike class components, functional
+     * components are simpler, have no `this` binding, and can use
+     * React Hooks (like useState) to manage state and side effects.
+     *
+     * The App component is the top-level component rendered by
+     * ReactDOM. It defines the profile data and passes it down
+     * to the ProfileCard child component via props.
+     *
+     * Props (short for "properties") are the mechanism React uses
+     * to pass data from a parent component to a child component.
+     * They are read-only inside the receiving component. Here, we
+     * use the spread operator ({...profileData}) to pass every
+     * field of the profileData object as an individual prop to
+     * ProfileCard. This is equivalent to writing:
+     *   <ProfileCard
+     *     name={profileData.name}
+     *     role={profileData.role}
+     *     bio={profileData.bio}
+     *     skills={profileData.skills}
+     *     avatar={profileData.avatar}
+     *     location={profileData.location}
+     *     socialLinks={profileData.socialLinks}
+     *   />
+     * The spread operator keeps the code concise and ensures every
+     * key in profileData becomes a prop with the corresponding value.
+     */
+    function App() {
+      // Render ProfileCard, passing all profile data fields as props
+      return <ProfileCard {...profileData} />;
+    }
+
+    /*
+     * ============================================================
+     * ReactDOM Render Call
+     * ============================================================
+     * ReactDOM.createRoot() creates a React root for the provided
+     * DOM node (the <div id="root"> element in the body). The
+     * .render() method mounts the <App /> component into that
+     * node. This is the React 18 API for rendering; createRoot
+     * enables concurrent rendering features.
+     */
+    ReactDOM.createRoot(document.getElementById('root')).render(<App />);
+  </script>
+</body>
+</html>
